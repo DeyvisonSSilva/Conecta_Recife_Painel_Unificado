@@ -4,9 +4,11 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { iniciarServidor } = require('../server');
 const { carregarConfig } = require('../src/config');
 const { montarAplicacao } = require('../src/composicao');
 const { normalizarDocumento } = require('../src/domain/Documento');
+const { JsonStore } = require('../src/infrastructure/json/JsonStore');
 
 const CPF = '529.982.247-25';
 const CPF2 = '111.444.777-35';
@@ -43,6 +45,30 @@ test('sistema inicia sem nenhuma denúncia', async () => {
   assert.deepEqual((await http('GET', '/api/denuncias', { token: t })).corpo, []);
   const st = (await http('GET', '/api/painel/estatisticas', { token: await loginServidor() })).corpo;
   assert.equal(st.total, 0); assert.equal(st.tempoMedioDias, null);
+});
+
+test('entrypoint serve a interface da pasta public na raiz', async () => {
+  const config = { ...carregarConfig({ DATA_DIR: path.join(dir, 'entrypoint') }), porta: 0 };
+  const sistema = await iniciarServidor(config);
+  try {
+    const resposta = await fetch(`http://127.0.0.1:${sistema.servidor.address().port}/`);
+    assert.equal(resposta.status, 200);
+    assert.match(await resposta.text(), /Conecta Recife/);
+  } finally {
+    await sistema.encerrar();
+  }
+});
+
+test('banco JSON ausente inicia vazio e conteúdo inválido não é descartado', () => {
+  const arquivo = path.join(dir, 'store', 'banco.json');
+  const store = new JsonStore(arquivo);
+  assert.deepEqual(store.dados, { denuncias: {}, notificacoes: [], sequencias: {} });
+  assert.equal(fs.existsSync(arquivo), false);
+
+  fs.mkdirSync(path.dirname(arquivo), { recursive: true });
+  fs.writeFileSync(arquivo, '{', 'utf8');
+  assert.throws(() => new JsonStore(arquivo), SyntaxError);
+  assert.equal(fs.readFileSync(arquivo, 'utf8'), '{');
 });
 
 test('exige autenticação e papel correto', async () => {
