@@ -15,6 +15,9 @@ const { TokenService } = require('./infrastructure/auth/TokenService');
 const { criarApp } = require('./interfaces/http/criarApp');
 
 async function criarPersistencia(config) {
+  if (process.env.VERCEL && !config.databaseUrl) {
+    throw new Error('Configure DATABASE_URL com um PostgreSQL externo para executar no Vercel.');
+  }
   if (config.databaseUrl) {
     const { Pool } = require('pg');
     const pool = new Pool({ connectionString: config.databaseUrl });

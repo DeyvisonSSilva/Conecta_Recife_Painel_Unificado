@@ -7,7 +7,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-opcional-4169E1?logo=postgresql&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-11%20passando-brightgreen)
+![Testes](https://img.shields.io/badge/testes-14%20passando-brightgreen)
 ![Projeto](https://img.shields.io/badge/projeto-acad%C3%AAmico%20(AV2)-1777e5)
 
 </div>
@@ -23,6 +23,7 @@
 - [Como executar](#como-executar)
 - [Configuração](#configuração)
 - [Usando PostgreSQL](#usando-postgresql)
+- [Deploy na Vercel](#deploy-na-vercel)
 - [Arquitetura e SOLID](#arquitetura-e-solid)
 - [API REST](#api-rest)
 - [Testes](#testes)
@@ -151,6 +152,18 @@ DATABASE_URL=postgres://usuario:senha@localhost:5432/conecta_recife npm start
 
 O esquema ([`db/schema.sql`](db/schema.sql)) é aplicado automaticamente na inicialização. Não é preciso alterar código: a escolha do banco é feita apenas na composição das dependências.
 
+## Deploy na Vercel
+
+A Vercel carrega `server.js` como uma aplicação Express; os arquivos de `public/` são servidos pela CDN. Configure em **Project Settings → Environment Variables**:
+
+| Variável | Necessidade |
+|---|---|
+| `DATABASE_URL` | Obrigatória: URL de um PostgreSQL externo acessível pela Vercel |
+| `AUTH_SECRET` | Obrigatória em produção: segredo longo e aleatório |
+| `SERVIDOR_MATRICULA` / `SERVIDOR_SENHA` | Credenciais do perfil servidor |
+
+Sem `DATABASE_URL`, a inicialização do backend na Vercel falha explicitamente: o sistema de arquivos das funções não é persistente e pode ser somente leitura. As fotos ainda usam armazenamento local; para persistir uploads em produção, integre um serviço externo de armazenamento de objetos.
+
 ## Arquitetura e SOLID
 
 ```
@@ -221,7 +234,7 @@ Erros seguem o formato `{ "erro": "mensagem" }` com os códigos `401`, `403`, `4
 npm test
 ```
 
-Os 11 testes cobrem: validação de CPF/CNPJ, sistema iniciando vazio, autenticação e papéis, registro com protocolo e classificação automática, validações, duplicidade, isolamento entre cidadãos, fluxo de status com notificações, indicadores e CSV, **persistência após reiniciar o servidor** e validação de upload de fotos.
+Os 14 testes cobrem: validação de CPF/CNPJ, inicialização e handler Express, armazenamento JSON inválido, autenticação e papéis, registro com protocolo e classificação automática, validações, duplicidade, isolamento entre cidadãos, fluxo de status com notificações, indicadores e CSV, **persistência após reiniciar o servidor** e validação de upload de fotos.
 
 ## Limitações conhecidas
 
@@ -230,6 +243,7 @@ Os 11 testes cobrem: validação de CPF/CNPJ, sistema iniciando vazio, autentica
 - O login do cidadão exige apenas CPF/CNPJ válido (não há senha nem verificação de identidade); gov.br e Certificado Digital não estão integrados.
 - E-mail e push são simulados (mensagem no console); as notificações ficam disponíveis dentro do aplicativo.
 - O banco JSON atende a um único processo; para uso simultâneo, utilize PostgreSQL.
+- O armazenamento local de fotos não é persistente na Vercel; use um serviço externo de arquivos para produção.
 - Antes de publicar em produção: trocar `AUTH_SECRET` e a senha do servidor, servir via HTTPS e adicionar limite de requisições.
 
 ## Próximos passos

@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { iniciarServidor } = require('../server');
+const { iniciarServidor, criarAplicacao } = require('../server');
 const { carregarConfig } = require('../src/config');
 const { montarAplicacao } = require('../src/composicao');
 const { normalizarDocumento } = require('../src/domain/Documento');
@@ -56,6 +56,27 @@ test('entrypoint serve a interface da pasta public na raiz', async () => {
     assert.match(await resposta.text(), /Conecta Recife/);
   } finally {
     await sistema.encerrar();
+  }
+});
+
+test('server.js exporta uma aplicação Express compatível com Vercel', async () => {
+  const expressApp = require('../server');
+  assert.equal(typeof expressApp, 'function');
+  assert.equal(typeof expressApp.listen, 'function');
+
+  const config = { ...carregarConfig({ DATA_DIR: path.join(dir, 'vercel-handler') }), porta: 0 };
+  const app = criarAplicacao(config);
+  const servidor = app.listen(config.porta);
+  await new Promise((resolve) => servidor.once('listening', resolve));
+  try {
+    const resposta = await fetch(`http://127.0.0.1:${servidor.address().port}/`);
+    assert.equal(resposta.status, 200);
+    assert.match(await resposta.text(), /Conecta Recife/);
+  } finally {
+    await new Promise((resolve, reject) => {
+      servidor.close((erro) => erro ? reject(erro) : resolve());
+    });
+    await app.encerrar();
   }
 });
 
