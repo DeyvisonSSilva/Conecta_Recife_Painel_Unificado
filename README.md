@@ -266,7 +266,6 @@ Os 14 testes cobrem: validação de CPF/CNPJ, inicialização e handler Express,
 | Adilson Pedro | 01751877 |
 | Leticia Rodrigues | 01612042 |
 | Pedro Lucas | 01750440 |
-| Alexsandro Souza | 01750424 |
 
 ---
 
